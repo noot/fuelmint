@@ -11,10 +11,10 @@ import (
 	"syscall"
 	"time"
 
-	rollconf "github.com/celestiaorg/rollmint/config"
-	rollconv "github.com/celestiaorg/rollmint/conv"
-	rollnode "github.com/celestiaorg/rollmint/node"
-	rollrpc "github.com/celestiaorg/rollmint/rpc"
+	rollconf "github.com/rollkit/rollkit/config"
+	rollconv "github.com/rollkit/rollkit/conv"
+	rollnode "github.com/rollkit/rollkit/node"
+	rollrpc "github.com/rollkit/rollkit/rpc"
 	"github.com/spf13/viper"
 	abci "github.com/tendermint/tendermint/abci/types"
 	cfg "github.com/tendermint/tendermint/config"
@@ -54,7 +54,6 @@ func init() {
 }
 
 func main() {
-
 	flag.Parse()
 	if help {
 		flag.Usage()
@@ -74,10 +73,16 @@ func main() {
 			os.Exit(2)
 		}
 
-		node.Start()
+		err = node.Start()
+		if err != nil {
+			panic(err)
+		}
+
 		defer func() {
-			node.Stop()
-			node.Wait()
+			err = node.Stop()
+			if err != nil {
+				fmt.Println("failed to stop node:", err)
+			}
 		}()
 
 		c := make(chan os.Signal, 1)
@@ -87,7 +92,7 @@ func main() {
 	}
 }
 
-func newRollup(app abci.Application, configFile string) (*rollnode.Node, *rollrpc.Server, error) {
+func newRollup(app abci.Application, configFile string) (rollnode.Node, *rollrpc.Server, error) {
 	// read config
 	config := cfg.DefaultConfig()
 	config.RootDir = filepath.Dir(filepath.Dir(configFile))
